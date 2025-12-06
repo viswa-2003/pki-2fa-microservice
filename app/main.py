@@ -65,16 +65,29 @@ def load_seed_from_file(path: str = "/data/seed.txt") -> str:
         return f.read().strip()
 
 def generate_totp_code(hex_seed: str) -> str:
+    # 1. Convert hex seed (64-char) to bytes
     seed_bytes = bytes.fromhex(hex_seed)
-    base32_seed = base64.b32encode(seed_bytes).decode("utf-8")     # [web:42]
-    totp = pyotp.TOTP(base32_seed)                                 # [web:28]
+
+    # 2. Convert bytes to Base32 string
+    base32_seed = base64.b32encode(seed_bytes).decode("utf-8")  # [web:42]
+
+    # 3. Create TOTP with defaults: SHA-1, 30s interval, 6 digits [web:28][web:47]
+    totp = pyotp.TOTP(base32_seed)
+
+    # 4. Generate current code
     return totp.now()
 
 def verify_totp_code(hex_seed: str, code: str, valid_window: int = 1) -> bool:
+    # 1. Same hex→bytes→base32 as in generate_totp_code
     seed_bytes = bytes.fromhex(hex_seed)
-    base32_seed = base64.b32encode(seed_bytes).decode("utf-8")     # [web:42]
+    base32_seed = base64.b32encode(seed_bytes).decode("utf-8")
+
+    # 2. Same TOTP parameters
     totp = pyotp.TOTP(base32_seed)
-    return totp.verify(code, valid_window=valid_window)            # [web:28][web:59]
+
+    # 3. Verify with time window tolerance ±1 period (±30s) [web:28][web:46]
+    return totp.verify(code, valid_window=valid_window)
+    # [web:28][web:59]
 
 def seconds_remaining_in_period(period: int = 30) -> int:
     now = int(time.time())
